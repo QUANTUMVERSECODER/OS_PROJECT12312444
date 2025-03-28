@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VirtualOS - Educational OS Simulation</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="os-container">
+        <!-- Header -->
+        <header class="os-header">
+            <div class="logo">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                    <line x1="8" y1="21" x2="16" y2="21"></line>
+                    <line x1="12" y1="17" x2="12" y2="21"></line>
+                </svg>
+                <h1>VirtualOS</h1>
+            </div>
+            <div class="system-stats">
+                <span id="clock">00:00:00</span>
+                <span id="cpu-usage">CPU: 0%</span>
+                <span id="memory-usage">Memory: 0%</span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="os-main">
+            <!-- Sidebar -->
+            <nav class="os-sidebar">
+                <button class="nav-btn active" data-tab="processes">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z"></path>
+                    </svg>
+                    Processes
+                </button>
+                <button class="nav-btn" data-tab="memory">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                        <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                    </svg>
+                    Memory
+                </button>
+                <button class="nav-btn" data-tab="terminal">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="4 17 10 11 4 5"></polyline>
+                        <line x1="12" y1="19" x2="20" y2="19"></line>
+                    </svg>
+                    Terminal
+                </button>
+            </nav>
+
+            <!-- Content Area -->
+            <div class="os-content">
+                <!-- Processes Tab -->
+                <div class="tab-content active" id="processes-tab">
+                    <div class="control-panel">
+                        <button id="new-process" class="btn">New Process</button>
+                        <select id="scheduling-algorithm">
+                            <option value="fcfs">First Come First Served</option>
+                            <option value="sjf">Shortest Job First</option>
+                            <option value="priority">Priority Scheduling</option>
+                        </select>
+                        <button id="start-simulation" class="btn">Start</button>
+                        <button id="pause-simulation" class="btn">Pause</button>
+                    </div>
+                    <div class="process-list">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>PID</th>
+                                    <th>Name</th>
+                                    <th>Status</th>
+                                    <th>Priority</th>
+                                    <th>CPU Usage</th>
+                                    <th>Memory</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="process-table-body">
+                                <!-- Processes will be added here dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="process-visualization">
+                        <canvas id="process-canvas"></canvas>
+                    </div>
+                </div>
+
+                <!-- Memory Tab -->
+                <div class="tab-content" id="memory-tab">
+                    <div class="memory-stats">
+                        <div class="stat-card">
+                            <h3>Total Memory</h3>
+                            <p>1024 MB</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Used Memory</h3>
+                            <p id="used-memory">0 MB</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Free Memory</h3>
+                            <p id="free-memory">1024 MB</p>
+                        </div>
+                    </div>
+                    <div class="memory-visualization">
+                        <div class="memory-blocks" id="memory-blocks">
+                            <!-- Memory blocks will be added here dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Terminal Tab -->
+                <div class="tab-content" id="terminal-tab">
+                    <div class="terminal">
+                        <div class="terminal-output" id="terminal-output">
+                            Welcome to VirtualOS Terminal
+                            Type 'help' for available commands
+                        </div>
+                        <div class="terminal-input">
+                            <span class="prompt">$</span>
+                            <input type="text" id="terminal-input" autocomplete="off">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Status Bar -->
+        <footer class="os-footer">
+            <div class="status-messages" id="status-messages">
+                System ready
+            </div>
+            <div class="quick-actions">
+                <button id="help-btn" class="icon-btn" title="Help">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                </button>
+                <button id="settings-btn" class="icon-btn" title="Settings">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                </button>
+            </div>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
