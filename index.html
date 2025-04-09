@@ -61,6 +61,9 @@
                             <option value="fcfs">First Come First Served</option>
                             <option value="sjf">Shortest Job First</option>
                             <option value="priority">Priority Scheduling</option>
+                            <option value="rr">Round Robin</option>
+                            <input type="number" id="rr-quantum" placeholder="Quantum (ms)" value="3000" style="padding: 8px; background-color: var(--surface-color); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 4px;">
+
                         </select>
                         <button id="start-simulation" class="btn">Start</button>
                         <button id="pause-simulation" class="btn">Pause</button>
@@ -149,6 +152,8 @@
             </div>
         </footer>
     </div>
+   
+    
 
     <script src="script.js"></script>
 </body>
