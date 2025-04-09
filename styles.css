@@ -4,6 +4,16 @@
     padding: 0;
     box-sizing: border-box;
 }
+.process-visualization {
+    background-color: var(--surface-color);
+    border-radius: 8px;
+    padding: 20px;
+    height: 200px;
+    overflow-x: auto; /* ✅ horizontal scroll */
+    overflow-y: hidden;
+    white-space: nowrap;
+}
+
 
 :root {
     --primary-color: #2563eb;
