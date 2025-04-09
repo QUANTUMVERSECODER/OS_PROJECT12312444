@@ -9,6 +9,8 @@ class Process {
         this.memory = Math.floor(Math.random() * 100) + 50; // Random memory between 50-150MB
         this.burstTime = Math.floor(Math.random() * 10) + 5; // Random burst time between 5-15 seconds
         this.arrivalTime = Date.now();
+        
+
     }
 }
 
@@ -66,12 +68,98 @@ class ProcessScheduler {
         this.processes = [];
         this.currentProcess = null;
         this.algorithm = 'fcfs';
-        this.quantum = 2000; // 2 seconds for Round Robin
+        this.quantum = 3000;
         this.isRunning = false;
+
+        // Round Robin
+        this.rrQueue = [];
+        this.rrIndex = 0;
+
+        // Gantt
+        this.ganttCanvas = document.getElementById('process-canvas');
+        this.ganttCtx = this.ganttCanvas?.getContext('2d');
+        this.ganttStep = 0;
+        this.ganttHistory = [];
+
+        this.pidToRowMap = {}; 
+        this.rowCounter = 0;
+
+    }
+
+    drawGanttChart() {
+        const ctx = this.ganttCtx;
+        const canvas = this.ganttCanvas;
+        if (!ctx || !canvas) return;
+    
+        const stepWidth = 30;
+        const rowHeight = 30;
+        const padding = 5;
+    
+        // --- Stable row mapping ---
+        if (!this.pidToRowMap) {
+            this.pidToRowMap = {};
+            this.rowCounter = 0;
+        }
+    
+        // Assign stable rows
+        this.ganttHistory.forEach(({ pid }) => {
+            if (!(pid in this.pidToRowMap)) {
+                this.pidToRowMap[pid] = this.rowCounter++;
+            }
+        });
+    
+        const totalRows = Object.keys(this.pidToRowMap).length;
+        canvas.width = this.ganttStep * stepWidth;
+        canvas.height = totalRows * rowHeight;
+    
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+        // Color map
+        const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+        const pidColors = {};
+        let colorIndex = 0;
+    
+        const getColor = (pid) => {
+            if (!pidColors[pid]) {
+                pidColors[pid] = colors[colorIndex++ % colors.length];
+            }
+            return pidColors[pid];
+        };
+    
+        // Draw Gantt blocks
+        for (let i = 0; i < this.ganttHistory.length; i++) {
+            const { pid, name, step } = this.ganttHistory[i];
+            const row = this.pidToRowMap[pid];
+            const x = step * stepWidth;
+            const y = row * rowHeight;
+    
+            ctx.fillStyle = getColor(pid);
+            ctx.fillRect(x + padding, y + padding, stepWidth - 2 * padding, rowHeight - 2 * padding);
+    
+            // Only label new segments
+            const prev = this.ganttHistory[i - 1];
+            if (!prev || prev.pid !== pid) {
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '12px sans-serif';
+                ctx.fillText(name, x + 6, y + 18);
+            }
+        }
+    
+        // Optional row labels (left side)
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '12px sans-serif';
+        for (const pid in this.pidToRowMap) {
+            const row = this.pidToRowMap[pid];
+            const label = this.processes.find(p => p.id == pid)?.name || `P${pid}`;
+            ctx.fillText(label, 5, row * rowHeight + 20);
+        }
     }
 
     addProcess(process) {
         this.processes.push(process);
+        if (this.algorithm === 'rr') {
+            this.rrQueue.push(process);
+        }
         this.updateProcessTable();
     }
 
@@ -80,12 +168,30 @@ class ProcessScheduler {
         if (index !== -1) {
             this.processes.splice(index, 1);
             memoryManager.deallocate(processId);
-            this.updateProcessTable();
         }
+
+        if (this.algorithm === 'rr') {
+            this.rrQueue = this.rrQueue.filter(p => p.id !== processId);
+            if (this.rrIndex >= this.rrQueue.length) this.rrIndex = 0;
+        }
+
+        this.updateProcessTable();
     }
 
     setAlgorithm(algorithm) {
         this.algorithm = algorithm;
+
+        if (algorithm === 'rr') {
+            this.rrQueue = this.processes.filter(p => p.status === 'ready');
+            this.rrIndex = 0;
+            this.quantum = 3000; // 3 seconds
+
+            const inputQuantum = parseInt(document.getElementById('rr-quantum')?.value);
+            if (!isNaN(inputQuantum)) {
+                this.quantum = inputQuantum;
+            }
+        }
+
         if (this.isRunning) {
             this.stop();
             this.start();
@@ -109,6 +215,48 @@ class ProcessScheduler {
     scheduleNext() {
         if (!this.isRunning) return;
 
+        if (this.algorithm === 'rr') {
+            if (this.rrQueue.length === 0) {
+                this.rrQueue = this.processes.filter(p => p.status === 'ready');
+                this.rrIndex = 0;
+            }
+
+            if (this.rrQueue.length > 0) {
+                this.currentProcess = this.rrQueue[this.rrIndex];
+                this.currentProcess.status = 'running';
+                this.currentProcess.cpuUsage = Math.min(100, this.currentProcess.cpuUsage + 20);
+                this.updateProcessTable();
+
+                this.ganttHistory.push({
+                    pid: this.currentProcess.id,
+                    name: this.currentProcess.name,
+                    step: this.ganttStep
+                });
+                this.ganttStep++;
+                this.drawGanttChart();
+
+                this.timeoutId = setTimeout(() => {
+                    this.currentProcess.burstTime--;
+                    console.log(`RR: Executed process ${this.currentProcess.name}`);
+                    terminal.appendOutput(`Running: ${this.currentProcess.name}\n`);
+
+
+                    if (this.currentProcess.burstTime <= 0) {
+                        this.currentProcess.status = 'terminated';
+                        this.removeProcess(this.currentProcess.id);
+                        this.rrQueue.splice(this.rrIndex, 1);
+                        if (this.rrIndex >= this.rrQueue.length) this.rrIndex = 0;
+                    } else {
+                        this.currentProcess.status = 'ready';
+                        this.rrIndex = (this.rrIndex + 1) % this.rrQueue.length;
+                    }
+                    this.scheduleNext();
+                }, this.quantum);
+            }
+            return;
+        }
+
+        // For FCFS, SJF, Priority
         if (this.currentProcess) {
             this.currentProcess.status = 'ready';
         }
@@ -137,6 +285,14 @@ class ProcessScheduler {
             this.currentProcess = nextProcess;
             this.currentProcess.status = 'running';
             this.currentProcess.cpuUsage = Math.min(100, this.currentProcess.cpuUsage + 20);
+
+            this.ganttHistory.push({
+                pid: this.currentProcess.id,
+                name: this.currentProcess.name,
+                step: this.ganttStep
+            });
+            this.ganttStep++;
+            this.drawGanttChart();
 
             this.timeoutId = setTimeout(() => {
                 this.currentProcess.burstTime--;
@@ -178,7 +334,6 @@ class ProcessScheduler {
             tableBody.appendChild(row);
         });
 
-        // Update system stats
         const runningProcess = this.processes.find(p => p.status === 'running');
         document.getElementById('cpu-usage').textContent = `CPU: ${runningProcess ? runningProcess.cpuUsage : 0}%`;
     }
